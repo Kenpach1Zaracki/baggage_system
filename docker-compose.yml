@@ -1,0 +1,73 @@
+services:
+  # ============================================
+  # PostgreSQL База данных
+  # ============================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: baggage_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: baggage_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=ru_RU.UTF-8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - baggage_network
+
+  # ============================================
+  # Qt Приложение для управления багажом
+  # ============================================
+  baggage_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: baggage_system
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Параметры подключения к БД
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: baggage_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      # Параметры Qt для X11 forwarding
+      DISPLAY: ${DISPLAY}
+      QT_X11_NO_MITSHM: 1
+      QT_QPA_PLATFORM: xcb
+    volumes:
+      # X11 socket для отображения GUI
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
+      # Xauthority для авторизации X11
+      - ${XAUTHORITY:-$HOME/.Xauthority}:/home/appuser/.Xauthority:ro
+    networks:
+      - baggage_network
+    privileged: false
+
+# ============================================
+# Volumes для персистентности данных
+# ============================================
+volumes:
+  postgres_data:
+    driver: local
+    name: baggage_postgres_data
+
+# ============================================
+# Сети
+# ============================================
+networks:
+  baggage_network:
+    driver: bridge
+    name: baggage_network

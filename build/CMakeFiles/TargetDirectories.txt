@@ -1,0 +1,5 @@
+/home/s1ayer/baggage_system/build/CMakeFiles/BaggageSystem.dir
+/home/s1ayer/baggage_system/build/CMakeFiles/edit_cache.dir
+/home/s1ayer/baggage_system/build/CMakeFiles/rebuild_cache.dir
+/home/s1ayer/baggage_system/build/CMakeFiles/BaggageSystem_autogen_timestamp_deps.dir
+/home/s1ayer/baggage_system/build/CMakeFiles/BaggageSystem_autogen.dir

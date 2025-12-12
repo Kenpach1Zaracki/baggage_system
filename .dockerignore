@@ -1,0 +1,13 @@
+# Игнорировать при сборке Docker образа
+build/
+.git/
+.gitignore
+.claude/
+*.md
+!README.md
+.dockerignore
+*.swp
+*.swo
+*~
+.DS_Store
+*.log
