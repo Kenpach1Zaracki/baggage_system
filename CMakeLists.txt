@@ -29,6 +29,8 @@ set(SOURCES
     src/FilterDialog.cpp
     src/DeleteByFlightDialog.cpp
     src/ChangeItemsDialog.cpp
+    src/LoginDialog.cpp
+    src/DateRangeReportDialog.cpp
 )
 
 # Заголовочные файлы
@@ -41,6 +43,8 @@ set(HEADERS
     include/FilterDialog.h
     include/DeleteByFlightDialog.h
     include/ChangeItemsDialog.h
+    include/LoginDialog.h
+    include/DateRangeReportDialog.h
 )
 
 # Ресурсные файлы

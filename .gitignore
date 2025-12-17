@@ -1,0 +1,29 @@
+# Build directories
+build/
+cmake-build-*/
+
+# Environment variables (содержит пароли!)
+.env
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Compiled files
+*.o
+*.so
+*.a
+BaggageSystem
+
+# Qt generated files
+*.autosave
+moc_*.cpp
+qrc_*.cpp
+ui_*.h

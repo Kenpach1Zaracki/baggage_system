@@ -1,2 +1,0 @@
-set(__QT_DEPLOY_TARGET_BaggageSystem_FILE /home/s1ayer/baggage_system/build/BaggageSystem)
-set(__QT_DEPLOY_TARGET_BaggageSystem_TYPE EXECUTABLE)

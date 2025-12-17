@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 #include "AddRecordDialog.h"
+#include "DateRangeReportDialog.h"
 #include "FilterDialog.h"
 #include "DeleteByFlightDialog.h"
 #include "ChangeItemsDialog.h"
@@ -15,7 +16,7 @@
 #include <QUrl>
 
 MainWindow::MainWindow(QWidget* parent)
-    : QMainWindow(parent), m_manager(std::make_unique<BaggageManager>()) {
+    : QMainWindow(parent), m_manager(std::make_unique<BaggageManager>()), m_isGuestMode(false), m_userRole("user") {
 
     setWindowTitle("Система управления багажом пассажиров");
     resize(1000, 600);
@@ -23,10 +24,127 @@ MainWindow::MainWindow(QWidget* parent)
     createMenus();
     createToolBar();
     createCentralWidget();
+
+    // КРИТИЧНО: Загружаем данные из БД при старте!
+    updateTable();
+
     updateStatusBar();
 }
 
 MainWindow::~MainWindow() {
+}
+
+void MainWindow::setGuestMode(bool isGuest) {
+    m_isGuestMode = isGuest;
+
+    if (m_isGuestMode) {
+        setWindowTitle("Система управления багажом пассажиров [ГОСТЕВОЙ РЕЖИМ - ТОЛЬКО ПРОСМОТР]");
+
+        // Отключаем кнопки добавления/удаления/изменения
+        if (m_btnAddRecord) m_btnAddRecord->setEnabled(false);
+        if (m_btnDeleteByFlight) m_btnDeleteByFlight->setEnabled(false);
+        if (m_btnChangeItems) m_btnChangeItems->setEnabled(false);
+        if (m_btnCreateFile) m_btnCreateFile->setEnabled(false);
+
+        // КРИТИЧНО: Отключаем пункты меню!
+        QList<QAction*> allActions = findChildren<QAction*>();
+        for (QAction* action : allActions) {
+            QString text = action->text();
+            
+            // Отключаем действия изменения данных
+            if (text.contains("Новый файл") ||
+                text.contains("Сохранить") ||
+                text.contains("Добавить") ||
+                text.contains("Удалить") ||
+                text.contains("Изменить")) {
+                action->setEnabled(false);
+            }
+        }
+
+        // КРИТИЧНО: Отключаем кнопки в toolbar!
+        QList<QToolBar*> toolbars = findChildren<QToolBar*>();
+        for (QToolBar* toolbar : toolbars) {
+            QList<QAction*> actions = toolbar->actions();
+            for (QAction* action : actions) {
+                QString text = action->text();
+                
+                if (text.contains("Сохранить") ||
+                    text.contains("Добавить") ||
+                    text.contains("Удалить")) {
+                    action->setEnabled(false);
+                }
+            }
+        }
+
+        QMessageBox::information(this, "Гостевой режим",
+            "Вы вошли в гостевом режиме.\n\n"
+            "Доступные функции:\n"
+            "  - Просмотр всех записей\n"
+            "  - Фильтрация данных\n"
+            "  - Создание отчётов\n\n"
+            "Операции добавления, удаления и изменения данных отключены.");
+    }
+}
+
+void MainWindow::setUserRole(const QString& role) {
+    m_userRole = role;
+    qDebug() << "Установлена роль пользователя:" << role;
+    setupPermissions();
+}
+
+void MainWindow::setupPermissions() {
+    // Настройка прав доступа на основе роли пользователя
+    bool isAdmin = (m_userRole == "admin");
+    bool isUser = (m_userRole == "user");
+
+    if (isAdmin) {
+        setWindowTitle("Система управления багажом пассажиров [АДМИНИСТРАТОР]");
+        // Админ имеет полный доступ ко всем функциям
+        if (m_btnAddRecord) m_btnAddRecord->setEnabled(true);
+        if (m_btnDeleteByFlight) m_btnDeleteByFlight->setEnabled(true);
+        if (m_btnChangeItems) m_btnChangeItems->setEnabled(true);
+        if (m_btnCreateFile) m_btnCreateFile->setEnabled(true);
+
+    } else if (isUser) {
+        setWindowTitle("Система управления багажом пассажиров [ПОЛЬЗОВАТЕЛЬ]");
+
+        // Обычный пользователь может:
+        // - Добавлять записи (CREATE)
+        // - Просматривать (READ)
+        // - Изменять СВОИ записи (UPDATE - ограниченно)
+        // НО НЕ МОЖЕТ:
+        // - Удалять записи (DELETE) - только админ
+        // - Создавать новые файлы
+        // - Очищать всю БД
+
+        if (m_btnAddRecord) m_btnAddRecord->setEnabled(true);  // Может добавлять
+        if (m_btnDeleteByFlight) m_btnDeleteByFlight->setEnabled(false);  // НЕ может удалять
+        if (m_btnChangeItems) m_btnChangeItems->setEnabled(true);  // Может изменять
+        if (m_btnCreateFile) m_btnCreateFile->setEnabled(false);  // НЕ может создавать файлы
+
+        // Отключаем опасные операции в меню
+        QList<QAction*> allActions = findChildren<QAction*>();
+        for (QAction* action : allActions) {
+            QString text = action->text();
+
+            // Блокируем удаление для обычных пользователей
+            if (text.contains("Удалить") || text.contains("Очистить")) {
+                action->setEnabled(false);
+            }
+        }
+
+        QMessageBox::information(this, "Права доступа",
+            "Вы вошли как обычный пользователь.\n\n"
+            "Доступные операции:\n"
+            "  ✓ Просмотр записей\n"
+            "  ✓ Добавление записей\n"
+            "  ✓ Изменение записей\n"
+            "  ✓ Создание отчётов\n\n"
+            "Ограничения:\n"
+            "  ✗ Удаление записей (только для администратора)\n"
+            "  ✗ Создание новых файлов",
+            QMessageBox::Information);
+    }
 }
 
 void MainWindow::createMenus() {
@@ -88,58 +206,99 @@ void MainWindow::createCentralWidget() {
     QVBoxLayout* mainLayout = new QVBoxLayout(centralWidget);
 
     // Таблица для отображения данных
-    m_tableWidget = new QTableWidget(this);
-    m_tableWidget->setColumnCount(5);
-    m_tableWidget->setHorizontalHeaderLabels(
-        {"№ рейса", "Ф.И.О. пассажира", "Кол-во вещей", "Веса вещей (кг)", "Общий вес (кг)"});
-    m_tableWidget->horizontalHeader()->setStretchLastSection(true);
-    m_tableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_tableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    m_tableWidget->setAlternatingRowColors(true);
+m_tableWidget = new QTableWidget(this);
+m_tableWidget->setColumnCount(5);
+m_tableWidget->setHorizontalHeaderLabels(
+    {"№ РЕЙСА", "Ф.И.О. ПАССАЖИРА", "КОЛ-ВО", "ВЕСА (КГ)", "ОБЩИЙ ВЕС (КГ)"});
 
-    mainLayout->addWidget(m_tableWidget);
+// ========== НАСТРОЙКА ШИРИНЫ КОЛОНОК ==========
+// Фиксированная ширина для узких колонок
+m_tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Fixed);
+m_tableWidget->setColumnWidth(0, 120);  // № рейса
 
-    // Группа кнопок для 8 обязательных функций
-    QGroupBox* functionsGroup = new QGroupBox("8 обязательных функций", this);
-    QGridLayout* gridLayout = new QGridLayout(functionsGroup);
+m_tableWidget->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Fixed);
+m_tableWidget->setColumnWidth(2, 100);   // Кол-во вещей
 
-    m_btnCreateFile = new QPushButton("1. Создать файл", this);
-    m_btnShowRecords = new QPushButton("2. Показать содержимое", this);
-    m_btnFilter = new QPushButton("3. Фильтр (1 вещь, 20-30 кг)", this);
-    m_btnCreateSummary = new QPushButton("4. Создать файл сводки", this);
-    m_btnShowSummary = new QPushButton("5. Показать файл сводки", this);
-    m_btnAddRecord = new QPushButton("6. Добавить запись", this);
-    m_btnDeleteByFlight = new QPushButton("7. Удалить по рейсам", this);
-    m_btnChangeItems = new QPushButton("8. Изменить кол-во вещей", this);
+m_tableWidget->horizontalHeader()->setSectionResizeMode(4, QHeaderView::Fixed);
+m_tableWidget->setColumnWidth(4, 150);  // Общий вес
 
-    gridLayout->addWidget(m_btnCreateFile, 0, 0);
-    gridLayout->addWidget(m_btnShowRecords, 0, 1);
-    gridLayout->addWidget(m_btnFilter, 0, 2);
-    gridLayout->addWidget(m_btnCreateSummary, 0, 3);
-    gridLayout->addWidget(m_btnShowSummary, 1, 0);
-    gridLayout->addWidget(m_btnAddRecord, 1, 1);
-    gridLayout->addWidget(m_btnDeleteByFlight, 1, 2);
-    gridLayout->addWidget(m_btnChangeItems, 1, 3);
+// Растягиваем длинные колонки пропорционально
+m_tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);  // ФИО
+m_tableWidget->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Stretch);  // Веса
+// ============================================
 
-    connect(m_btnCreateFile, &QPushButton::clicked, this, &MainWindow::onCreateFile);
-    connect(m_btnShowRecords, &QPushButton::clicked, this, &MainWindow::onShowRecords);
-    connect(m_btnFilter, &QPushButton::clicked, this, &MainWindow::onFilterRecords);
-    connect(m_btnCreateSummary, &QPushButton::clicked, this, &MainWindow::onCreateSummaryFile);
-    connect(m_btnShowSummary, &QPushButton::clicked, this, &MainWindow::onShowSummaryFile);
-    connect(m_btnAddRecord, &QPushButton::clicked, this, &MainWindow::onAddRecord);
-    connect(m_btnDeleteByFlight, &QPushButton::clicked, this, &MainWindow::onDeleteByFlight);
-    connect(m_btnChangeItems, &QPushButton::clicked, this, &MainWindow::onChangeItemCount);
+// Высота строк и заголовка
+m_tableWidget->verticalHeader()->setDefaultSectionSize(45);
+m_tableWidget->horizontalHeader()->setMinimumHeight(50);
 
-    mainLayout->addWidget(functionsGroup);
+// Остальные настройки
+m_tableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
+m_tableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
+m_tableWidget->setAlternatingRowColors(true);
 
-    setCentralWidget(centralWidget);
+// Панель кнопок управления
+QHBoxLayout* buttonLayout = new QHBoxLayout();
 
-    // Статусная строка
-    m_statusLabel = new QLabel("Готово", this);
-    statusBar()->addWidget(m_statusLabel);
+m_btnCreateFile = new QPushButton("Создать файл", this);
+connect(m_btnCreateFile, &QPushButton::clicked, this, &MainWindow::onCreateFile);
+
+QPushButton* btnShowRecords = new QPushButton("Показать записи", this);
+connect(btnShowRecords, &QPushButton::clicked, this, &MainWindow::onShowRecords);
+
+QPushButton* btnFilter = new QPushButton("Фильтр (1 вещь 20-30кг)", this);
+connect(btnFilter, &QPushButton::clicked, this, &MainWindow::onFilterRecords);
+
+QPushButton* btnCreateSummary = new QPushButton("Создать сводку", this);
+connect(btnCreateSummary, &QPushButton::clicked, this, &MainWindow::onCreateSummaryFile);
+
+QPushButton* btnShowSummary = new QPushButton("Показать сводку", this);
+connect(btnShowSummary, &QPushButton::clicked, this, &MainWindow::onShowSummaryFile);
+
+m_btnAddRecord = new QPushButton("Добавить запись", this);
+connect(m_btnAddRecord, &QPushButton::clicked, this, &MainWindow::onAddRecord);
+
+m_btnDeleteByFlight = new QPushButton("Удалить по рейсам", this);
+connect(m_btnDeleteByFlight, &QPushButton::clicked, this, &MainWindow::onDeleteByFlight);
+
+m_btnChangeItems = new QPushButton("Изменить вещи", this);
+connect(m_btnChangeItems, &QPushButton::clicked, this, &MainWindow::onChangeItemCount);
+
+QPushButton* btnDateReport = new QPushButton("Отчёт за период", this);
+connect(btnDateReport, &QPushButton::clicked, this, &MainWindow::onGenerateDateReport);
+
+buttonLayout->addWidget(m_btnCreateFile);
+buttonLayout->addWidget(btnShowRecords);
+buttonLayout->addWidget(btnFilter);
+buttonLayout->addWidget(btnCreateSummary);
+buttonLayout->addWidget(btnShowSummary);
+buttonLayout->addWidget(m_btnAddRecord);
+buttonLayout->addWidget(m_btnDeleteByFlight);
+buttonLayout->addWidget(m_btnChangeItems);
+buttonLayout->addWidget(btnDateReport);
+
+mainLayout->addLayout(buttonLayout);
+mainLayout->addWidget(m_tableWidget);
+
+// Создаём status bar и status label (только один раз в конструкторе)
+m_statusBar = statusBar();
+m_statusLabel = new QLabel("Готов к работе", this);
+m_statusBar->addPermanentWidget(m_statusLabel);
+
+setCentralWidget(centralWidget);
+
 }
 
 void MainWindow::updateTable() {
+    if (!m_tableWidget) {
+        qWarning() << "Table widget is null!";
+        return;
+    }
+
+    if (!m_manager) {
+        qWarning() << "BaggageManager is null!";
+        return;
+    }
+
     m_tableWidget->setRowCount(0);
 
     const QVector<BaggageRecord>& records = m_manager->getRecords();
@@ -168,6 +327,16 @@ void MainWindow::updateTable() {
 }
 
 void MainWindow::updateStatusBar() {
+    if (!m_statusLabel) {
+        qWarning() << "Status label is null!";
+        return;
+    }
+
+    if (!m_manager) {
+        qWarning() << "BaggageManager is null!";
+        return;
+    }
+
     int count = m_manager->getRecordCount();
     QString status = QString("Записей: %1").arg(count);
     if (!m_currentFilename.isEmpty()) {
@@ -370,6 +539,10 @@ void MainWindow::onSaveAsFile() {
 
 void MainWindow::onExit() {
     close();
+}
+void MainWindow::onGenerateDateReport() {
+    DateRangeReportDialog dialog(this);
+    dialog.exec();
 }
 
 void MainWindow::onAbout() {

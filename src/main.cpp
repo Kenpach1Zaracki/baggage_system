@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 #include "DatabaseManager.h"
+#include "LoginDialog.h"
 #include <QApplication>
 #include <QLocale>
 #include <QTranslator>
@@ -59,8 +60,27 @@ int main(int argc, char *argv[]) {
         qWarning() << "⚠ Не удалось загрузить файл стилей";
     }
 
+    // Показ диалога авторизации (ТЗ п. 1.2.8.4.2)
+    LoginDialog loginDialog;
+    if (loginDialog.exec() != QDialog::Accepted) {
+        qDebug() << "Авторизация отменена, выход из приложения";
+        return 0;
+    }
+
     // Создание и показ главного окна
     MainWindow mainWindow;
+
+    // Установка гостевого режима, если пользователь вошёл как гость
+    if (loginDialog.isGuestMode()) {
+        mainWindow.setGuestMode(true);
+        qDebug() << "Запуск в гостевом режиме (только просмотр)";
+    } else {
+        // Устанавливаем роль пользователя для RBAC
+        QString userRole = loginDialog.getUserRole();
+        mainWindow.setUserRole(userRole);
+        qDebug() << "Пользователь успешно аутентифицирован. Роль:" << userRole;
+    }
+
     mainWindow.show();
 
     int result = app.exec();

@@ -4,6 +4,7 @@
 #include <QDialogButtonBox>
 #include <QMessageBox>
 #include <QGroupBox>
+#include <QRegularExpression>
 
 AddRecordDialog::AddRecordDialog(QWidget* parent)
     : QDialog(parent) {
@@ -94,9 +95,20 @@ void AddRecordDialog::onAccept() {
 
 bool AddRecordDialog::validateInput() {
     // Проверка номера рейса
-    if (m_flightNumberEdit->text().trimmed().isEmpty()) {
+    QString flightNumber = m_flightNumberEdit->text().trimmed();
+    if (flightNumber.isEmpty()) {
         QMessageBox::warning(this, "Ошибка валидации",
             "Введите номер рейса!");
+        m_flightNumberEdit->setFocus();
+        return false;
+    }
+
+    // Валидация формата номера рейса (2 латинские буквы + 2-4 цифры)
+    QRegularExpression flightRegex("^[A-Z]{2}\\d{2,4}$", QRegularExpression::CaseInsensitiveOption);
+    if (!flightRegex.match(flightNumber).hasMatch()) {
+        QMessageBox::warning(this, "Ошибка валидации",
+            "Номер рейса должен быть в формате: 2 латинские буквы + 2-4 цифры\n"
+            "Примеры: SU1234, BA456, AA12");
         m_flightNumberEdit->setFocus();
         return false;
     }

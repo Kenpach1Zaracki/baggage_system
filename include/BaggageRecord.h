@@ -31,6 +31,8 @@ public:
     // Валидация
     static bool isValidItemCount(int count);
     static bool isValidWeight(double weight);
+    static bool isValidFlightNumber(const QString& flightNumber);
+    static bool isValidPassengerName(const QString& name);
     bool isValid() const;
 
     // Сериализация для сохранения в файл

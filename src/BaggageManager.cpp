@@ -6,6 +6,9 @@
 #include <QDebug>
 
 BaggageManager::BaggageManager() {
+    // Загружаем данные из БД при инициализации
+    m_records = DatabaseManager::instance().getAllRecords();
+    qDebug() << "BaggageManager инициализирован. Записей в кеше:" << m_records.size();
 }
 
 BaggageManager::~BaggageManager() {

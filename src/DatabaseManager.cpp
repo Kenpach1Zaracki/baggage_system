@@ -55,18 +55,36 @@ bool DatabaseManager::createTable() {
     QSqlQuery query(m_db);
 
     // Создаем таблицу багажа пассажиров
-    QString createTableSQL = R"(
+    QString createRecordsSQL = R"(
         CREATE TABLE IF NOT EXISTS baggage_records (
             id SERIAL PRIMARY KEY,
             flight_number VARCHAR(50) NOT NULL,
             passenger_name VARCHAR(255) NOT NULL,
-            item_weights TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            created_by INTEGER
         )
     )";
 
-    if (!query.exec(createTableSQL)) {
-        m_lastError = "Ошибка создания таблицы: " + query.lastError().text();
+    if (!query.exec(createRecordsSQL)) {
+        m_lastError = "Ошибка создания таблицы baggage_records: " + query.lastError().text();
+        qWarning() << m_lastError;
+        return false;
+    }
+
+    // Создаем таблицу вещей (нормализация)
+    QString createItemsSQL = R"(
+        CREATE TABLE IF NOT EXISTS baggage_items (
+            id SERIAL PRIMARY KEY,
+            baggage_record_id INTEGER NOT NULL REFERENCES baggage_records(id) ON DELETE CASCADE,
+            item_number INTEGER NOT NULL CHECK (item_number >= 1 AND item_number <= 5),
+            weight NUMERIC(5,2) NOT NULL CHECK (weight > 0 AND weight <= 100),
+            UNIQUE(baggage_record_id, item_number)
+        )
+    )";
+
+    if (!query.exec(createItemsSQL)) {
+        m_lastError = "Ошибка создания таблицы baggage_items: " + query.lastError().text();
         qWarning() << m_lastError;
         return false;
     }
@@ -74,8 +92,9 @@ bool DatabaseManager::createTable() {
     // Создаем индексы для ускорения поиска
     query.exec("CREATE INDEX IF NOT EXISTS idx_flight_number ON baggage_records(flight_number)");
     query.exec("CREATE INDEX IF NOT EXISTS idx_passenger_name ON baggage_records(passenger_name)");
+    query.exec("CREATE INDEX IF NOT EXISTS idx_baggage_items_record ON baggage_items(baggage_record_id)");
 
-    qDebug() << "Таблица baggage_records создана успешно";
+    qDebug() << "Таблицы baggage_records и baggage_items созданы успешно";
     return true;
 }
 
@@ -84,17 +103,45 @@ QVector<BaggageRecord> DatabaseManager::getAllRecords() {
     QVector<BaggageRecord> records;
     QSqlQuery query(m_db);
 
-    if (!query.exec("SELECT flight_number, passenger_name, item_weights FROM baggage_records ORDER BY id")) {
+    // Получаем все записи багажа
+    if (!query.exec("SELECT id, flight_number, passenger_name FROM baggage_records ORDER BY id")) {
         m_lastError = "Ошибка получения записей: " + query.lastError().text();
         qWarning() << m_lastError;
         return records;
     }
 
     while (query.next()) {
-        records.append(recordFromQuery(query));
+        int recordId = query.value("id").toInt();
+        QString flightNumber = query.value("flight_number").toString();
+        QString passengerName = query.value("passenger_name").toString();
+
+        // Получаем веса для этой записи
+        QVector<double> weights = getItemWeights(recordId);
+
+        records.append(BaggageRecord(flightNumber, passengerName, weights));
     }
 
     return records;
+}
+
+// Вспомогательный метод для получения весов вещей
+QVector<double> DatabaseManager::getItemWeights(int recordId) {
+    QVector<double> weights;
+    QSqlQuery query(m_db);
+
+    query.prepare("SELECT weight FROM baggage_items WHERE baggage_record_id = ? ORDER BY item_number");
+    query.addBindValue(recordId);
+
+    if (!query.exec()) {
+        qWarning() << "Ошибка получения весов для записи" << recordId << ":" << query.lastError().text();
+        return weights;
+    }
+
+    while (query.next()) {
+        weights.append(query.value(0).toDouble());
+    }
+
+    return weights;
 }
 
 // Функция 3: Фильтр пассажиров с 1 вещью весом 20-30 кг
@@ -138,9 +185,26 @@ bool DatabaseManager::createSummaryFile(const QString& filename) {
         out << record.getFlightNumber() << "\t"
             << record.getPassengerName() << "\t"
             << QString::number(record.getTotalWeight(), 'f', 2) << "\n";
+
+        // Проверка ошибок записи
+        if (out.status() != QTextStream::Ok) {
+            m_lastError = "Ошибка записи в файл сводки: " + filename;
+            qWarning() << m_lastError;
+            file.close();
+            return false;
+        }
     }
 
     file.close();
+
+    // Проверка успешности закрытия файла
+    if (file.error() != QFileDevice::NoError) {
+        m_lastError = "Ошибка при закрытии файла: " + file.errorString();
+        qWarning() << m_lastError;
+        return false;
+    }
+
+    qDebug() << "Файл сводки успешно создан:" << filename;
     return true;
 }
 
@@ -152,26 +216,90 @@ bool DatabaseManager::addRecord(const BaggageRecord& record) {
         return false;
     }
 
-    QSqlQuery query(m_db);
-    query.prepare("INSERT INTO baggage_records (flight_number, passenger_name, item_weights) "
-                 "VALUES (:flight_number, :passenger_name, :item_weights)");
-
-    query.bindValue(":flight_number", record.getFlightNumber());
-    query.bindValue(":passenger_name", record.getPassengerName());
-    query.bindValue(":item_weights", weightsToString(record.getItemWeights()));
-
-    if (!query.exec()) {
-        m_lastError = "Ошибка добавления записи: " + query.lastError().text();
+    // Проверка подключения к БД
+    if (!m_db.isOpen()) {
+        m_lastError = "База данных не подключена";
         qWarning() << m_lastError;
         return false;
     }
 
+    // ТРАНЗАКЦИЯ: начинаем транзакцию
+    if (!m_db.transaction()) {
+        m_lastError = "Не удалось начать транзакцию: " + m_db.lastError().text();
+        qWarning() << m_lastError;
+        return false;
+    }
+
+    // Вставляем запись багажа
+    QSqlQuery query(m_db);
+    query.prepare("INSERT INTO baggage_records (flight_number, passenger_name) VALUES (?, ?) RETURNING id");
+    query.addBindValue(record.getFlightNumber());
+    query.addBindValue(record.getPassengerName());
+
+    if (!query.exec()) {
+        m_lastError = "Ошибка добавления записи: " + query.lastError().text();
+        qWarning() << m_lastError;
+        m_db.rollback();
+        return false;
+    }
+
+    // Получаем ID созданной записи
+    int recordId = -1;
+    if (query.next()) {
+        recordId = query.value(0).toInt();
+    } else {
+        m_lastError = "Не удалось получить ID созданной записи";
+        qWarning() << m_lastError;
+        m_db.rollback();
+        return false;
+    }
+
+    // Вставляем вещи
+    QVector<double> weights = record.getItemWeights();
+    for (int i = 0; i < weights.size(); ++i) {
+        QSqlQuery itemQuery(m_db);
+        itemQuery.prepare("INSERT INTO baggage_items (baggage_record_id, item_number, weight) VALUES (?, ?, ?)");
+        itemQuery.addBindValue(recordId);
+        itemQuery.addBindValue(i + 1);
+        itemQuery.addBindValue(weights[i]);
+
+        if (!itemQuery.exec()) {
+            m_lastError = "Ошибка добавления вещи: " + itemQuery.lastError().text();
+            qWarning() << m_lastError;
+            m_db.rollback();
+            return false;
+        }
+    }
+
+    // Фиксируем транзакцию
+    if (!m_db.commit()) {
+        m_lastError = "Не удалось зафиксировать транзакцию: " + m_db.lastError().text();
+        qWarning() << m_lastError;
+        m_db.rollback();
+        return false;
+    }
+
+    qDebug() << "Запись и вещи успешно добавлены:" << record.getPassengerName();
     return true;
 }
 
 // Функция 7: Удалить записи по номерам рейсов
 int DatabaseManager::deleteRecordsByFlightNumbers(const QStringList& flightNumbers) {
     if (flightNumbers.isEmpty()) {
+        return 0;
+    }
+
+    // Проверка подключения к БД
+    if (!m_db.isOpen()) {
+        m_lastError = "База данных не подключена";
+        qWarning() << m_lastError;
+        return 0;
+    }
+
+    // ТРАНЗАКЦИЯ: Начинаем транзакцию для атомарности операции
+    if (!m_db.transaction()) {
+        m_lastError = "Не удалось начать транзакцию: " + m_db.lastError().text();
+        qWarning() << m_lastError;
         return 0;
     }
 
@@ -194,56 +322,157 @@ int DatabaseManager::deleteRecordsByFlightNumbers(const QStringList& flightNumbe
     if (!query.exec()) {
         m_lastError = "Ошибка удаления записей: " + query.lastError().text();
         qWarning() << m_lastError;
+        m_db.rollback();  // Откатываем изменения
         return 0;
     }
 
-    return query.numRowsAffected();
+    int affectedRows = query.numRowsAffected();
+
+    // Фиксируем транзакцию
+    if (!m_db.commit()) {
+        m_lastError = "Не удалось зафиксировать транзакцию: " + m_db.lastError().text();
+        qWarning() << m_lastError;
+        m_db.rollback();
+        return 0;
+    }
+
+    qDebug() << "Транзакция успешно выполнена. Удалено записей:" << affectedRows;
+    return affectedRows;
 }
 
 // Функция 8: Изменить количество вещей для указанных ФИО
 bool DatabaseManager::changeItemCountByName(const QString& passengerName,
                                            const QVector<double>& newWeights) {
+    // Валидация входных данных
+    if (passengerName.trimmed().isEmpty()) {
+        m_lastError = "ФИО пассажира не может быть пустым";
+        return false;
+    }
+
     if (!BaggageRecord::isValidItemCount(newWeights.size())) {
-        m_lastError = "Неверное количество вещей";
+        m_lastError = "Неверное количество вещей (должно быть от 1 до 5)";
         return false;
     }
 
     for (double weight : newWeights) {
         if (!BaggageRecord::isValidWeight(weight)) {
-            m_lastError = "Неверный вес вещи";
+            m_lastError = "Неверный вес вещи (должен быть от 0 до 100 кг)";
             return false;
         }
     }
 
-    QSqlQuery query(m_db);
-    query.prepare("UPDATE baggage_records SET item_weights = :item_weights "
-                 "WHERE passenger_name = :passenger_name");
-
-    query.bindValue(":item_weights", weightsToString(newWeights));
-    query.bindValue(":passenger_name", passengerName);
-
-    if (!query.exec()) {
-        m_lastError = "Ошибка изменения записей: " + query.lastError().text();
+    // Проверка подключения к БД
+    if (!m_db.isOpen()) {
+        m_lastError = "База данных не подключена";
         qWarning() << m_lastError;
         return false;
     }
 
-    int affected = query.numRowsAffected();
-    if (affected == 0) {
-        m_lastError = "Пассажир с указанным ФИО не найден";
+    // ТРАНЗАКЦИЯ: Начинаем транзакцию
+    if (!m_db.transaction()) {
+        m_lastError = "Не удалось начать транзакцию: " + m_db.lastError().text();
+        qWarning() << m_lastError;
         return false;
     }
 
-    qDebug() << "Изменено записей:" << affected;
+    // Получаем ID записи по ФИО
+    QSqlQuery findQuery(m_db);
+    findQuery.prepare("SELECT id FROM baggage_records WHERE passenger_name = ?");
+    findQuery.addBindValue(passengerName);
+
+    if (!findQuery.exec()) {
+        m_lastError = "Ошибка поиска записи: " + findQuery.lastError().text();
+        qWarning() << m_lastError;
+        m_db.rollback();
+        return false;
+    }
+
+    if (!findQuery.next()) {
+        m_lastError = "Пассажир с указанным ФИО не найден";
+        m_db.rollback();
+        return false;
+    }
+
+    int recordId = findQuery.value(0).toInt();
+
+    // Удаляем старые вещи
+    QSqlQuery deleteQuery(m_db);
+    deleteQuery.prepare("DELETE FROM baggage_items WHERE baggage_record_id = ?");
+    deleteQuery.addBindValue(recordId);
+
+    if (!deleteQuery.exec()) {
+        m_lastError = "Ошибка удаления старых вещей: " + deleteQuery.lastError().text();
+        qWarning() << m_lastError;
+        m_db.rollback();
+        return false;
+    }
+
+    // Вставляем новые вещи
+    for (int i = 0; i < newWeights.size(); ++i) {
+        QSqlQuery insertQuery(m_db);
+        insertQuery.prepare("INSERT INTO baggage_items (baggage_record_id, item_number, weight) VALUES (?, ?, ?)");
+        insertQuery.addBindValue(recordId);
+        insertQuery.addBindValue(i + 1);
+        insertQuery.addBindValue(newWeights[i]);
+
+        if (!insertQuery.exec()) {
+            m_lastError = "Ошибка вставки новой вещи: " + insertQuery.lastError().text();
+            qWarning() << m_lastError;
+            m_db.rollback();
+            return false;
+        }
+    }
+
+    // Обновляем updated_at
+    QSqlQuery updateQuery(m_db);
+    updateQuery.prepare("UPDATE baggage_records SET updated_at = CURRENT_TIMESTAMP WHERE id = ?");
+    updateQuery.addBindValue(recordId);
+    updateQuery.exec();
+
+    // Фиксируем транзакцию
+    if (!m_db.commit()) {
+        m_lastError = "Не удалось зафиксировать транзакцию: " + m_db.lastError().text();
+        qWarning() << m_lastError;
+        m_db.rollback();
+        return false;
+    }
+
+    qDebug() << "Транзакция успешно выполнена. Обновлены веса для:" << passengerName;
     return true;
 }
 
 void DatabaseManager::clearAllRecords() {
+    // Проверка подключения к БД
+    if (!m_db.isOpen()) {
+        m_lastError = "База данных не подключена";
+        qWarning() << m_lastError;
+        return;
+    }
+
+    // ТРАНЗАКЦИЯ: Начинаем транзакцию для безопасного удаления всех записей
+    if (!m_db.transaction()) {
+        m_lastError = "Не удалось начать транзакцию: " + m_db.lastError().text();
+        qWarning() << m_lastError;
+        return;
+    }
+
     QSqlQuery query(m_db);
     if (!query.exec("DELETE FROM baggage_records")) {
         m_lastError = "Ошибка очистки таблицы: " + query.lastError().text();
         qWarning() << m_lastError;
+        m_db.rollback();  // Откатываем изменения
+        return;
     }
+
+    // Фиксируем транзакцию
+    if (!m_db.commit()) {
+        m_lastError = "Не удалось зафиксировать транзакцию: " + m_db.lastError().text();
+        qWarning() << m_lastError;
+        m_db.rollback();
+        return;
+    }
+
+    qDebug() << "Транзакция успешно выполнена. Все записи удалены.";
 }
 
 int DatabaseManager::getRecordCount() {
@@ -265,9 +494,8 @@ QVector<BaggageRecord> DatabaseManager::findRecordsByFlightNumber(const QString&
     QVector<BaggageRecord> records;
     QSqlQuery query(m_db);
 
-    query.prepare("SELECT flight_number, passenger_name, item_weights "
-                 "FROM baggage_records WHERE flight_number = :flight_number");
-    query.bindValue(":flight_number", flightNumber);
+    query.prepare("SELECT id, flight_number, passenger_name FROM baggage_records WHERE flight_number = ?");
+    query.addBindValue(flightNumber);
 
     if (!query.exec()) {
         m_lastError = "Ошибка поиска по номеру рейса: " + query.lastError().text();
@@ -276,7 +504,12 @@ QVector<BaggageRecord> DatabaseManager::findRecordsByFlightNumber(const QString&
     }
 
     while (query.next()) {
-        records.append(recordFromQuery(query));
+        int recordId = query.value("id").toInt();
+        QString flightNum = query.value("flight_number").toString();
+        QString passengerName = query.value("passenger_name").toString();
+        QVector<double> weights = getItemWeights(recordId);
+
+        records.append(BaggageRecord(flightNum, passengerName, weights));
     }
 
     return records;
@@ -286,9 +519,8 @@ QVector<BaggageRecord> DatabaseManager::findRecordsByPassengerName(const QString
     QVector<BaggageRecord> records;
     QSqlQuery query(m_db);
 
-    query.prepare("SELECT flight_number, passenger_name, item_weights "
-                 "FROM baggage_records WHERE passenger_name = :passenger_name");
-    query.bindValue(":passenger_name", passengerName);
+    query.prepare("SELECT id, flight_number, passenger_name FROM baggage_records WHERE passenger_name = ?");
+    query.addBindValue(passengerName);
 
     if (!query.exec()) {
         m_lastError = "Ошибка поиска по ФИО: " + query.lastError().text();
@@ -297,41 +529,42 @@ QVector<BaggageRecord> DatabaseManager::findRecordsByPassengerName(const QString
     }
 
     while (query.next()) {
-        records.append(recordFromQuery(query));
+        int recordId = query.value("id").toInt();
+        QString flightNumber = query.value("flight_number").toString();
+        QString passName = query.value("passenger_name").toString();
+        QVector<double> weights = getItemWeights(recordId);
+
+        records.append(BaggageRecord(flightNumber, passName, weights));
     }
 
     return records;
 }
 
-// Вспомогательные методы
-BaggageRecord DatabaseManager::recordFromQuery(QSqlQuery& query) {
-    QString flightNumber = query.value("flight_number").toString();
-    QString passengerName = query.value("passenger_name").toString();
-    QString weightsStr = query.value("item_weights").toString();
-    QVector<double> weights = weightsFromString(weightsStr);
+QVector<BaggageRecord> DatabaseManager::getRecordsByDateRange(const QDateTime& from, const QDateTime& to) {
+    QVector<BaggageRecord> records;
+    QSqlQuery query(m_db);
 
-    return BaggageRecord(flightNumber, passengerName, weights);
-}
+    query.prepare("SELECT id, flight_number, passenger_name "
+                 "FROM baggage_records "
+                 "WHERE created_at BETWEEN ? AND ? "
+                 "ORDER BY created_at");
+    query.addBindValue(from);
+    query.addBindValue(to);
 
-QString DatabaseManager::weightsToString(const QVector<double>& weights) {
-    QStringList list;
-    for (double weight : weights) {
-        list.append(QString::number(weight, 'f', 2));
-    }
-    return list.join(",");
-}
-
-QVector<double> DatabaseManager::weightsFromString(const QString& weightsStr) {
-    QVector<double> weights;
-    QStringList list = weightsStr.split(",", Qt::SkipEmptyParts);
-
-    for (const QString& str : list) {
-        bool ok;
-        double weight = str.toDouble(&ok);
-        if (ok) {
-            weights.append(weight);
-        }
+    if (!query.exec()) {
+        m_lastError = "Ошибка получения записей за период: " + query.lastError().text();
+        qWarning() << m_lastError;
+        return records;
     }
 
-    return weights;
+    while (query.next()) {
+        int recordId = query.value("id").toInt();
+        QString flightNumber = query.value("flight_number").toString();
+        QString passengerName = query.value("passenger_name").toString();
+        QVector<double> weights = getItemWeights(recordId);
+
+        records.append(BaggageRecord(flightNumber, passengerName, weights));
+    }
+
+    return records;
 }

@@ -4,6 +4,7 @@
 #include <QSqlDatabase>
 #include <QString>
 #include <QVector>
+#include <QDateTime>
 #include "BaggageRecord.h"
 
 /**
@@ -55,6 +56,12 @@ public:
     QVector<BaggageRecord> findRecordsByFlightNumber(const QString& flightNumber);
     QVector<BaggageRecord> findRecordsByPassengerName(const QString& passengerName);
 
+    // Отчёты за период (ТЗ п. 1.2.4.1.1)
+    QVector<BaggageRecord> getRecordsByDateRange(const QDateTime& from, const QDateTime& to);
+
+    // Доступ к базе данных (для LoginDialog и других компонентов)
+    QSqlDatabase& getDatabase() { return m_db; }
+
 private:
     DatabaseManager();
     ~DatabaseManager();
@@ -65,9 +72,7 @@ private:
     QString m_lastError;
 
     // Вспомогательные методы
-    BaggageRecord recordFromQuery(class QSqlQuery& query);
-    QString weightsToString(const QVector<double>& weights);
-    QVector<double> weightsFromString(const QString& weightsStr);
+    QVector<double> getItemWeights(int recordId);
 };
 
 #endif // DATABASEMANAGER_H
