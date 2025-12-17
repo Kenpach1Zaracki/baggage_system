@@ -78,8 +78,6 @@ COMMENT ON COLUMN users.created_at IS 'Дата регистрации поль�
 
 -- Создание администратора по умолчанию
 -- Логин: admin
--- Пароль: poprobuy_vzlomat15
--- ВАЖНО: Хеш пароля НЕ публикуется в открытом виде для безопасности
 INSERT INTO users (username, password_hash, role)
 VALUES ('admin', '286057e1642b4a482258fa71c57d7c700ba55fa8b6b15f5593648c800a1dad02', 'admin')
 ON CONFLICT (username) DO NOTHING;

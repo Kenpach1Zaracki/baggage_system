@@ -169,6 +169,13 @@ QString DateRangeReportDialog::generateReportText(const QVector<BaggageRecord>& 
            << " по " << to.toString("dd.MM.yyyy HH:mm") << "\n";
     stream << "Дата формирования: " << QDateTime::currentDateTime().toString("dd.MM.yyyy HH:mm:ss") << "\n\n";
 
+    if (records.isEmpty()) {
+        stream << "----------------------------------------\n";
+        stream << "ЗА УКАЗАННЫЙ ПЕРИОД ЗАПИСЕЙ НЕ НАЙДЕНО\n";
+        stream << "----------------------------------------\n";
+        return report;
+    }
+
     // Общая статистика
     stream << "----------------------------------------\n";
     stream << "ОБЩАЯ СТАТИСТИКА:\n";

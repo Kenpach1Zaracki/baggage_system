@@ -103,24 +103,57 @@ QVector<BaggageRecord> DatabaseManager::getAllRecords() {
     QVector<BaggageRecord> records;
     QSqlQuery query(m_db);
 
-    // Получаем все записи багажа
-    if (!query.exec("SELECT id, flight_number, passenger_name FROM baggage_records ORDER BY id")) {
+    // Используем JOIN для получения всех данных за 1 запрос вместо N+1
+    QString sql = R"(
+        SELECT br.id, br.flight_number, br.passenger_name, 
+               bi.item_number, bi.weight
+        FROM baggage_records br
+        LEFT JOIN baggage_items bi ON bi.baggage_record_id = br.id
+        ORDER BY br.id, bi.item_number
+    )";
+
+    if (!query.exec(sql)) {
         m_lastError = "Ошибка получения записей: " + query.lastError().text();
         qWarning() << m_lastError;
         return records;
     }
 
+    // Группируем результаты по записям
+    int lastRecordId = -1;
+    QString currentFlightNumber;
+    QString currentPassengerName;
+    QVector<double> currentWeights;
+
     while (query.next()) {
         int recordId = query.value("id").toInt();
-        QString flightNumber = query.value("flight_number").toString();
-        QString passengerName = query.value("passenger_name").toString();
-
-        // Получаем веса для этой записи
-        QVector<double> weights = getItemWeights(recordId);
-
-        records.append(BaggageRecord(flightNumber, passengerName, weights));
+        
+        // Если началась новая запись
+        if (recordId != lastRecordId && lastRecordId != -1) {
+            // Сохраняем предыдущую запись
+            records.append(BaggageRecord(currentFlightNumber, currentPassengerName, currentWeights));
+            currentWeights.clear();
+        }
+        
+        // Читаем данные текущей записи
+        if (recordId != lastRecordId) {
+            currentFlightNumber = query.value("flight_number").toString();
+            currentPassengerName = query.value("passenger_name").toString();
+            lastRecordId = recordId;
+        }
+        
+        // Добавляем вес вещи (если есть)
+        if (!query.value("weight").isNull()) {
+            double weight = query.value("weight").toDouble();
+            currentWeights.append(weight);
+        }
     }
 
+    // Не забываем добавить последнюю запись
+    if (lastRecordId != -1) {
+        records.append(BaggageRecord(currentFlightNumber, currentPassengerName, currentWeights));
+    }
+
+    qDebug() << "Загружено записей из БД:" << records.size();
     return records;
 }
 

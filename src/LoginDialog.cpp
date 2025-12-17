@@ -75,17 +75,6 @@ void LoginDialog::setupUI() {
 
     mainLayout->addLayout(buttonLayout);
 
-    // Подсказка
-    QLabel* hintLabel = new QLabel(
-        "Для первого входа используйте:\n"
-        "Логин: admin, Пароль: admin\n"
-        "или войдите как гость (только просмотр)",
-        this
-    );
-    hintLabel->setStyleSheet("color: gray; font-size: 10pt;");
-    hintLabel->setAlignment(Qt::AlignCenter);
-    mainLayout->addWidget(hintLabel);
-
     // Подключение сигналов
     connect(m_loginButton, &QPushButton::clicked, this, &LoginDialog::onLoginClicked);
     connect(m_registerButton, &QPushButton::clicked, this, &LoginDialog::onRegisterClicked);

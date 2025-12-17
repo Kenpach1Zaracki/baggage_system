@@ -36,46 +36,11 @@ MainWindow::~MainWindow() {
 
 void MainWindow::setGuestMode(bool isGuest) {
     m_isGuestMode = isGuest;
-
+    
     if (m_isGuestMode) {
-        setWindowTitle("Система управления багажом пассажиров [ГОСТЕВОЙ РЕЖИМ - ТОЛЬКО ПРОСМОТР]");
-
-        // Отключаем кнопки добавления/удаления/изменения
-        if (m_btnAddRecord) m_btnAddRecord->setEnabled(false);
-        if (m_btnDeleteByFlight) m_btnDeleteByFlight->setEnabled(false);
-        if (m_btnChangeItems) m_btnChangeItems->setEnabled(false);
-        if (m_btnCreateFile) m_btnCreateFile->setEnabled(false);
-
-        // КРИТИЧНО: Отключаем пункты меню!
-        QList<QAction*> allActions = findChildren<QAction*>();
-        for (QAction* action : allActions) {
-            QString text = action->text();
-            
-            // Отключаем действия изменения данных
-            if (text.contains("Новый файл") ||
-                text.contains("Сохранить") ||
-                text.contains("Добавить") ||
-                text.contains("Удалить") ||
-                text.contains("Изменить")) {
-                action->setEnabled(false);
-            }
-        }
-
-        // КРИТИЧНО: Отключаем кнопки в toolbar!
-        QList<QToolBar*> toolbars = findChildren<QToolBar*>();
-        for (QToolBar* toolbar : toolbars) {
-            QList<QAction*> actions = toolbar->actions();
-            for (QAction* action : actions) {
-                QString text = action->text();
-                
-                if (text.contains("Сохранить") ||
-                    text.contains("Добавить") ||
-                    text.contains("Удалить")) {
-                    action->setEnabled(false);
-                }
-            }
-        }
-
+        m_userRole = "guest";
+        setupPermissions();  // Всё управление правами в одном месте!
+        
         QMessageBox::information(this, "Гостевой режим",
             "Вы вошли в гостевом режиме.\n\n"
             "Доступные функции:\n"
@@ -96,43 +61,48 @@ void MainWindow::setupPermissions() {
     // Настройка прав доступа на основе роли пользователя
     bool isAdmin = (m_userRole == "admin");
     bool isUser = (m_userRole == "user");
+    bool isGuest = (m_userRole == "guest");
 
+    // Отключаем все опасные операции в меню для не-админов
+    if (!isAdmin) {
+        QList<QAction*> allActions = findChildren<QAction*>();
+        for (QAction* action : allActions) {
+            QString text = action->text();
+            
+            if (isGuest) {
+                // Гость - блокируем всё кроме просмотра
+                if (text.contains("Новый файл") || text.contains("Сохранить") ||
+                    text.contains("Добавить") || text.contains("Удалить") || 
+                    text.contains("Изменить")) {
+                    action->setEnabled(false);
+                }
+            } else if (isUser) {
+                // Обычный пользователь - блокируем только удаление
+                if (text.contains("Удалить") || text.contains("Очистить")) {
+                    action->setEnabled(false);
+                }
+            }
+        }
+    }
+
+    // Настройка кнопок и заголовка в зависимости от роли
     if (isAdmin) {
         setWindowTitle("Система управления багажом пассажиров [АДМИНИСТРАТОР]");
+        
         // Админ имеет полный доступ ко всем функциям
         if (m_btnAddRecord) m_btnAddRecord->setEnabled(true);
         if (m_btnDeleteByFlight) m_btnDeleteByFlight->setEnabled(true);
         if (m_btnChangeItems) m_btnChangeItems->setEnabled(true);
         if (m_btnCreateFile) m_btnCreateFile->setEnabled(true);
-
+        
     } else if (isUser) {
         setWindowTitle("Система управления багажом пассажиров [ПОЛЬЗОВАТЕЛЬ]");
-
-        // Обычный пользователь может:
-        // - Добавлять записи (CREATE)
-        // - Просматривать (READ)
-        // - Изменять СВОИ записи (UPDATE - ограниченно)
-        // НО НЕ МОЖЕТ:
-        // - Удалять записи (DELETE) - только админ
-        // - Создавать новые файлы
-        // - Очищать всю БД
-
-        if (m_btnAddRecord) m_btnAddRecord->setEnabled(true);  // Может добавлять
-        if (m_btnDeleteByFlight) m_btnDeleteByFlight->setEnabled(false);  // НЕ может удалять
-        if (m_btnChangeItems) m_btnChangeItems->setEnabled(true);  // Может изменять
-        if (m_btnCreateFile) m_btnCreateFile->setEnabled(false);  // НЕ может создавать файлы
-
-        // Отключаем опасные операции в меню
-        QList<QAction*> allActions = findChildren<QAction*>();
-        for (QAction* action : allActions) {
-            QString text = action->text();
-
-            // Блокируем удаление для обычных пользователей
-            if (text.contains("Удалить") || text.contains("Очистить")) {
-                action->setEnabled(false);
-            }
-        }
-
+        
+        if (m_btnAddRecord) m_btnAddRecord->setEnabled(true);
+        if (m_btnDeleteByFlight) m_btnDeleteByFlight->setEnabled(false);
+        if (m_btnChangeItems) m_btnChangeItems->setEnabled(true);
+        if (m_btnCreateFile) m_btnCreateFile->setEnabled(false);
+        
         QMessageBox::information(this, "Права доступа",
             "Вы вошли как обычный пользователь.\n\n"
             "Доступные операции:\n"
@@ -144,6 +114,15 @@ void MainWindow::setupPermissions() {
             "  ✗ Удаление записей (только для администратора)\n"
             "  ✗ Создание новых файлов",
             QMessageBox::Information);
+            
+    } else if (isGuest) {
+        setWindowTitle("Система управления багажом пассажиров [ГОСТЕВОЙ РЕЖИМ - ТОЛЬКО ПРОСМОТР]");
+        
+        // Гость - ТОЛЬКО просмотр
+        if (m_btnAddRecord) m_btnAddRecord->setEnabled(false);
+        if (m_btnDeleteByFlight) m_btnDeleteByFlight->setEnabled(false);
+        if (m_btnChangeItems) m_btnChangeItems->setEnabled(false);
+        if (m_btnCreateFile) m_btnCreateFile->setEnabled(false);
     }
 }
 

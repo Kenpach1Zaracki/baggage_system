@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
     QLocale::setDefault(QLocale(QLocale::Russian, QLocale::Russia));
 
     // Подключение к PostgreSQL
-    QString dbHost = qEnvironmentVariable("DB_HOST", "localhost");
+    QString dbHost = qEnvironmentVariable("DB_HOST", "postgres");
     int dbPort = qEnvironmentVariable("DB_PORT", "5432").toInt();
     QString dbName = qEnvironmentVariable("DB_NAME", "baggage_db");
     QString dbUser = qEnvironmentVariable("DB_USER", "postgres");

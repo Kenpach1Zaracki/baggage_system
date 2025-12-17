@@ -28,7 +28,16 @@ void FilterDialog::createUI() {
     m_tableWidget = new QTableWidget(this);
     m_tableWidget->setColumnCount(3);
     m_tableWidget->setHorizontalHeaderLabels({"№ рейса", "Ф.И.О. пассажира", "Вес вещи (кг)"});
-    m_tableWidget->horizontalHeader()->setStretchLastSection(true);
+
+    // Настройка ширины столбцов
+    m_tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Fixed);
+    m_tableWidget->setColumnWidth(0, 120);  // № рейса
+
+    m_tableWidget->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Fixed);
+    m_tableWidget->setColumnWidth(2, 130);  // Вес вещи
+
+    m_tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);  // ФИО растягивается
+
     m_tableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_tableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_tableWidget->setAlternatingRowColors(true);
