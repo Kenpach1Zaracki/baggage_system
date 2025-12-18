@@ -31,12 +31,12 @@ void FilterDialog::createUI() {
 
     // Настройка ширины столбцов
     m_tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Fixed);
-    m_tableWidget->setColumnWidth(0, 120);  // № рейса
+    m_tableWidget->setColumnWidth(0, 140);  // № рейса (УМЕРЕННО)
 
     m_tableWidget->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Fixed);
-    m_tableWidget->setColumnWidth(2, 130);  // Вес вещи
+    m_tableWidget->setColumnWidth(2, 180);  // Вес вещи (кг) (ДОСТАТОЧНО)
 
-    m_tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);  // ФИО растягивается
+    m_tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
 
     m_tableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_tableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);

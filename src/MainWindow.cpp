@@ -14,6 +14,10 @@
 #include <QGroupBox>
 #include <QDesktopServices>
 #include <QUrl>
+#include <QTextEdit>
+#include <QFont>
+#include <QDialog>
+#include <QPushButton>
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent), m_manager(std::make_unique<BaggageManager>()), m_isGuestMode(false), m_userRole("user") {
@@ -193,13 +197,13 @@ m_tableWidget->setHorizontalHeaderLabels(
 // ========== НАСТРОЙКА ШИРИНЫ КОЛОНОК ==========
 // Фиксированная ширина для узких колонок
 m_tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Fixed);
-m_tableWidget->setColumnWidth(0, 120);  // № рейса
+m_tableWidget->setColumnWidth(0, 150);  // № рейса (БОЛЬШЕ)
 
 m_tableWidget->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Fixed);
-m_tableWidget->setColumnWidth(2, 100);   // Кол-во вещей
+m_tableWidget->setColumnWidth(2, 120);   // Кол-во вещей (БОЛЬШЕ)
 
 m_tableWidget->horizontalHeader()->setSectionResizeMode(4, QHeaderView::Fixed);
-m_tableWidget->setColumnWidth(4, 150);  // Общий вес
+m_tableWidget->setColumnWidth(4, 180);  // Общий вес (БОЛЬШЕ)
 
 // Растягиваем длинные колонки пропорционально
 m_tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);  // ФИО
@@ -395,11 +399,49 @@ void MainWindow::onShowSummaryFile() {
         return;
     }
 
-    // Открываем файл в стандартном текстовом редакторе
-    if (!QDesktopServices::openUrl(QUrl::fromLocalFile(filename))) {
+    // Проверяем существование файла
+    QFile file(filename);
+    if (!file.exists()) {
         QMessageBox::critical(this, "Ошибка",
-            "Не удалось открыть файл!");
+            QString("Файл не найден:\n%1").arg(filename));
+        return;
     }
+
+    // Читаем содержимое файла
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QMessageBox::critical(this, "Ошибка",
+            QString("Не удалось открыть файл для чтения:\n%1").arg(filename));
+        return;
+    }
+
+    QTextStream in(&file);
+    in.setEncoding(QStringConverter::Utf8);
+    QString content = in.readAll();
+    file.close();
+
+    // Создаем диалоговое окно для отображения содержимого
+    QDialog* dialog = new QDialog(this);
+    dialog->setWindowTitle("Просмотр файла сводки");
+    dialog->resize(700, 500);
+
+    QVBoxLayout* layout = new QVBoxLayout(dialog);
+
+    // Текстовое поле для отображения содержимого
+    QTextEdit* textEdit = new QTextEdit(dialog);
+    textEdit->setReadOnly(true);
+    textEdit->setPlainText(content);
+    textEdit->setFont(QFont("Monospace", 10));
+    layout->addWidget(textEdit);
+
+    // Кнопка "Закрыть"
+    QPushButton* closeButton = new QPushButton("Закрыть", dialog);
+    connect(closeButton, &QPushButton::clicked, dialog, &QDialog::accept);
+    layout->addWidget(closeButton);
+
+    dialog->exec();
+    delete dialog;
+
+    qDebug() << "Файл сводки успешно отображен:" << filename;
 }
 
 // Функция 6: Добавить запись

@@ -1,239 +1,282 @@
 /* ============================================
    КОРПОРАТИВНЫЙ СТИЛЬ ДЛЯ СИСТЕМЫ БАГАЖА
+   УВЕЛИЧЕННЫЙ ШРИФТ ДЛЯ ЧЁТКИХ СКРИНШОТОВ
    Цветовая схема: Строгий деловой стиль
    ============================================ */
 
-/* === ОСНОВНЫЕ НАСТРОЙКИ === */
+/* === ОСНОВНЫЕ НАСТРОЙКИ (УВЕЛИЧЕНЫ) === */
 * {
     font-family: "Arial", "Helvetica", sans-serif;
+    font-size: 16px;
 }
 
 QMainWindow {
     background: #e5e7eb;
+    min-width: 1200px;
+    min-height: 700px;
 }
 
 /* === ЦЕНТРАЛЬНЫЙ ВИДЖЕТ === */
 QWidget#centralWidget {
     background: #ffffff;
-    border: 1px solid #d1d5db;
+    border: 2px solid #d1d5db;
+    padding: 10px;
 }
 
-/* === МЕНЮ БАР === */
+/* === МЕНЮ БАР (УВЕЛИЧЕН) === */
 QMenuBar {
     background: #1e3a5f;
     color: #ffffff;
-    border-bottom: 3px solid #2563eb;
-    padding: 4px;
-    font-size: 13px;
+    border-bottom: 4px solid #2563eb;
+    padding: 8px;
+    font-size: 16px;
     font-weight: 600;
+    height: 36px;
 }
 
 QMenuBar::item {
     background: transparent;
-    padding: 8px 16px;
-    margin: 0px 2px;
+    padding: 12px 20px;
+    margin: 0px 4px;
+    font-size: 15px;
 }
 
 QMenuBar::item:selected {
     background: #2563eb;
     color: #ffffff;
+    font-weight: 700;
 }
 
 QMenuBar::item:pressed {
     background: #1d4ed8;
+    font-size: 15px;
 }
 
-/* === ВЫПАДАЮЩЕЕ МЕНЮ === */
+/* === ВЫПАДАЮЩЕЕ МЕНЮ (УВЕЛИЧЕНО) === */
 QMenu {
     background: #ffffff;
     color: #1f2937;
-    border: 2px solid #d1d5db;
-    padding: 4px;
+    border: 3px solid #d1d5db;
+    padding: 8px;
+    font-size: 15px;
 }
 
 QMenu::item {
-    padding: 8px 32px;
-    margin: 1px;
+    padding: 12px 40px;
+    margin: 3px;
     color: #1f2937;
+    font-size: 15px;
+    min-height: 32px;
 }
 
 QMenu::item:selected {
     background: #2563eb;
     color: #ffffff;
+    font-weight: 600;
 }
 
 QMenu::separator {
-    height: 1px;
+    height: 2px;
     background: #d1d5db;
-    margin: 4px 8px;
+    margin: 8px 12px;
 }
 
-/* === ПАНЕЛЬ ИНСТРУМЕНТОВ === */
+/* === ПАНЕЛЬ ИНСТРУМЕНТОВ (УВЕЛИЧЕНА) === */
 QToolBar {
     background: #f9fafb;
     border: none;
-    border-bottom: 2px solid #d1d5db;
-    spacing: 8px;
-    padding: 6px;
+    border-bottom: 3px solid #d1d5db;
+    spacing: 12px;
+    padding: 10px;
+    height: 60px;
 }
 
 QToolBar QToolButton {
     background: #2563eb;
     color: #ffffff;
-    border: 1px solid #1d4ed8;
-    padding: 8px 16px;
-    font-size: 13px;
-    font-weight: 600;
-    min-width: 80px;
+    border: 2px solid #1d4ed8;
+    padding: 12px 20px;
+    font-size: 15px;
+    font-weight: 700;
+    min-width: 100px;
+    min-height: 44px;
+    border-radius: 4px;
 }
 
 QToolBar QToolButton:hover {
     background: #1d4ed8;
-    border: 1px solid #1e40af;
+    border: 2px solid #1e40af;
+    font-size: 15px;
 }
 
 QToolBar QToolButton:pressed {
     background: #1e40af;
+    font-size: 15px;
 }
 
 QToolBar::separator {
     background: #9ca3af;
-    width: 1px;
-    margin: 4px;
+    width: 2px;
+    margin: 6px;
+    height: 40px;
 }
 
-/* === ТАБЛИЦА === */
+/* === ТАБЛИЦА (УВЕЛИЧЕНА - ВАЖНО!) === */
 QTableWidget {
     background: #ffffff;
     color: #1f2937;
     alternate-background-color: #f9fafb;
-    border: 2px solid #d1d5db;
+    border: 3px solid #d1d5db;
     gridline-color: #e5e7eb;
     selection-background-color: #2563eb;
     selection-color: #ffffff;
-    font-size: 13px;
+    font-size: 15px;
     padding: 0px;
+    border-radius: 6px;
 }
 
 QTableWidget::item {
-    padding: 10px;
+    padding: 14px;
     border: none;
     color: #1f2937;
+    font-size: 14px;
+    min-height: 48px;
 }
 
 QTableWidget::item:hover {
     background: #eff6ff;
+    font-weight: 500;
 }
 
 QHeaderView::section {
     background: #374151;
     color: #ffffff;
-    padding: 12px;
-    border: 1px solid #4b5563;
+    padding: 16px;
+    border: 2px solid #4b5563;
     border-left: none;
-    font-size: 13px;
-    font-weight: 700;
+    font-size: 15px;
+    font-weight: 800;
+    min-height: 52px;
 }
 
 QHeaderView::section:first {
-    border-left: 1px solid #4b5563;
+    border-left: 2px solid #4b5563;
 }
 
 QHeaderView::section:last {
-    border-right: 1px solid #4b5563;
+    border-right: 2px solid #4b5563;
 }
 
-/* === КНОПКИ === */
+/* === КНОПКИ (УВЕЛИЧЕНЫ) === */
 QPushButton {
     background: #2563eb;
     color: #ffffff;
-    border: 1px solid #1d4ed8;
-    padding: 10px 20px;
-    font-size: 13px;
-    font-weight: 600;
-    min-width: 100px;
-    min-height: 36px;
+    border: 2px solid #1d4ed8;
+    padding: 14px 28px;
+    font-size: 16px;
+    font-weight: 700;
+    min-width: 130px;
+    min-height: 48px;
+    border-radius: 6px;
 }
 
 QPushButton:hover {
     background: #1d4ed8;
-    border: 1px solid #1e40af;
+    border: 2px solid #1e40af;
+    font-size: 16px;
 }
 
 QPushButton:pressed {
     background: #1e40af;
+    font-size: 16px;
 }
 
 QPushButton:disabled {
     background: #9ca3af;
     color: #d1d5db;
-    border: 1px solid #6b7280;
+    border: 2px solid #6b7280;
+    font-size: 16px;
 }
 
 /* === СПЕЦИАЛЬНЫЕ КНОПКИ === */
 QPushButton#primaryButton {
     background: #059669;
-    border: 1px solid #047857;
+    border: 2px solid #047857;
+    font-size: 16px;
 }
 
 QPushButton#primaryButton:hover {
     background: #047857;
-    border: 1px solid #065f46;
+    border: 2px solid #065f46;
+    font-size: 16px;
 }
 
 QPushButton#dangerButton {
     background: #dc2626;
-    border: 1px solid #b91c1c;
+    border: 2px solid #b91c1c;
+    font-size: 16px;
 }
 
 QPushButton#dangerButton:hover {
     background: #b91c1c;
-    border: 1px solid #991b1b;
+    border: 2px solid #991b1b;
+    font-size: 16px;
 }
 
-/* === ТЕКСТОВЫЕ ПОЛЯ === */
+/* === ТЕКСТОВЫЕ ПОЛЯ (УВЕЛИЧЕНЫ) === */
 QLineEdit, QTextEdit, QPlainTextEdit {
     background: #ffffff;
     color: #1f2937;
-    border: 1px solid #d1d5db;
-    padding: 8px 12px;
-    font-size: 13px;
+    border: 2px solid #d1d5db;
+    padding: 12px 16px;
+    font-size: 16px;
     selection-background-color: #2563eb;
     selection-color: #ffffff;
+    border-radius: 4px;
+    min-height: 44px;
 }
 
 QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {
-    border: 2px solid #2563eb;
+    border: 3px solid #2563eb;
     background: #ffffff;
+    font-size: 16px;
 }
 
 QLineEdit:hover, QTextEdit:hover, QPlainTextEdit:hover {
     border-color: #9ca3af;
+    font-size: 16px;
 }
 
-/* === SPIN BOX === */
+/* === SPIN BOX (УВЕЛИЧЕНЫ) === */
 QSpinBox, QDoubleSpinBox {
     background: #ffffff;
     color: #1f2937;
-    border: 1px solid #d1d5db;
-    padding: 8px 12px;
-    font-size: 13px;
-    min-width: 100px;
+    border: 2px solid #d1d5db;
+    padding: 12px 16px;
+    font-size: 16px;
+    min-width: 140px;
+    min-height: 48px;
+    border-radius: 4px;
 }
 
 QSpinBox:focus, QDoubleSpinBox:focus {
-    border: 2px solid #2563eb;
+    border: 3px solid #2563eb;
     background: #ffffff;
+    font-size: 16px;
 }
 
 QSpinBox::up-button, QDoubleSpinBox::up-button {
     background: #6b7280;
-    width: 20px;
+    width: 28px;
+    height: 24px;
+    border-radius: 2px;
 }
 
 QSpinBox::down-button, QDoubleSpinBox::down-button {
     background: #6b7280;
-    width: 20px;
+    width: 28px;
+    height: 24px;
+    border-radius: 2px;
 }
 
 QSpinBox::up-button:hover, QDoubleSpinBox::up-button:hover,
@@ -241,52 +284,60 @@ QSpinBox::down-button:hover, QDoubleSpinBox::down-button:hover {
     background: #4b5563;
 }
 
-/* === МЕТКИ (LABELS) === */
+/* === МЕТКИ (LABELS - УВЕЛИЧЕНЫ) === */
 QLabel {
     color: #1f2937;
-    font-size: 13px;
-    font-weight: 500;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 4px;
 }
 
 QLabel#titleLabel {
-    font-size: 18px;
-    font-weight: 700;
+    font-size: 22px;
+    font-weight: 800;
     color: #1e3a5f;
+    padding: 8px;
 }
 
 QLabel#subtitleLabel {
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 18px;
+    font-weight: 700;
     color: #374151;
+    padding: 6px;
 }
 
-/* === ГРУППЫ (GROUP BOX) === */
+/* === ГРУППЫ (GROUP BOX - УВЕЛИЧЕНЫ) === */
 QGroupBox {
     background: #ffffff;
-    border: 2px solid #d1d5db;
-    margin-top: 12px;
-    padding: 16px;
-    font-size: 13px;
-    font-weight: 700;
+    border: 3px solid #d1d5db;
+    margin-top: 16px;
+    padding: 20px;
+    font-size: 17px;
+    font-weight: 800;
     color: #1f2937;
+    border-radius: 8px;
 }
 
 QGroupBox::title {
     subcontrol-origin: margin;
     subcontrol-position: top left;
-    padding: 4px 12px;
+    padding: 8px 16px;
     background: #374151;
     color: #ffffff;
-    margin-left: 8px;
+    margin-left: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    border-radius: 4px;
 }
 
-/* === СТАТУС БАР === */
+/* === СТАТУС БАР (УВЕЛИЧЕН) === */
 QStatusBar {
     background: #f9fafb;
-    border-top: 2px solid #d1d5db;
+    border-top: 3px solid #d1d5db;
     color: #374151;
-    font-size: 12px;
-    padding: 6px;
+    font-size: 15px;
+    padding: 10px;
+    height: 40px;
 }
 
 QStatusBar::item {
@@ -294,21 +345,26 @@ QStatusBar::item {
 }
 
 QStatusBar QLabel {
-    padding: 4px 10px;
+    padding: 8px 14px;
     background: #e5e7eb;
     color: #1f2937;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 4px;
 }
 
-/* === SCROLLBAR === */
+/* === SCROLLBAR (УВЕЛИЧЕНЫ) === */
 QScrollBar:vertical {
     background: #f3f4f6;
-    width: 14px;
-    margin: 0;
+    width: 18px;
+    margin: 4px;
+    border-radius: 8px;
 }
 
 QScrollBar::handle:vertical {
     background: #9ca3af;
-    min-height: 30px;
+    min-height: 40px;
+    border-radius: 8px;
 }
 
 QScrollBar::handle:vertical:hover {
@@ -326,13 +382,15 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
 
 QScrollBar:horizontal {
     background: #f3f4f6;
-    height: 14px;
-    margin: 0;
+    height: 18px;
+    margin: 4px;
+    border-radius: 8px;
 }
 
 QScrollBar::handle:horizontal {
     background: #9ca3af;
-    min-width: 30px;
+    min-width: 40px;
+    border-radius: 8px;
 }
 
 QScrollBar::handle:horizontal:hover {
@@ -344,10 +402,13 @@ QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
     background: none;
 }
 
-/* === ДИАЛОГОВЫЕ ОКНА === */
+/* === ДИАЛОГОВЫЕ ОКНА (УВЕЛИЧЕНЫ) === */
 QDialog {
     background: #ffffff;
-    border: 1px solid #d1d5db;
+    border: 2px solid #d1d5db;
+    min-width: 600px;
+    min-height: 500px;
+    border-radius: 8px;
 }
 
 QDialogButtonBox {
@@ -355,94 +416,149 @@ QDialogButtonBox {
 }
 
 QDialogButtonBox QPushButton {
-    min-width: 100px;
-    margin: 4px;
+    min-width: 120px;
+    margin: 8px;
+    font-size: 16px;
+    padding: 12px 24px;
 }
 
-/* === MESSAGE BOX === */
+/* === MESSAGE BOX (УВЕЛИЧЕН) === */
 QMessageBox {
     background: #ffffff;
-    font-size: 13px;
+    font-size: 16px;
+    min-width: 500px;
+    min-height: 200px;
 }
 
 QMessageBox QPushButton {
-    min-width: 90px;
-    padding: 8px 18px;
+    min-width: 110px;
+    padding: 12px 22px;
+    font-size: 16px;
+    margin: 6px;
 }
 
-/* === TAB WIDGET === */
+QMessageBox QLabel {
+    font-size: 16px;
+    padding: 12px;
+}
+
+/* === TAB WIDGET (УВЕЛИЧЕН) === */
 QTabWidget::pane {
-    border: 2px solid #d1d5db;
+    border: 3px solid #d1d5db;
     background: #ffffff;
-    top: -1px;
+    top: -2px;
+    border-radius: 6px;
 }
 
 QTabBar::tab {
     background: #e5e7eb;
-    border: 1px solid #d1d5db;
+    border: 2px solid #d1d5db;
     border-bottom: none;
-    padding: 10px 20px;
-    margin-right: 2px;
-    font-weight: 600;
+    padding: 14px 24px;
+    margin-right: 4px;
+    font-weight: 700;
     color: #374151;
+    font-size: 15px;
+    min-height: 40px;
 }
 
 QTabBar::tab:selected {
     background: #2563eb;
     color: #ffffff;
-    border: 1px solid #1d4ed8;
+    border: 2px solid #1d4ed8;
+    font-size: 16px;
+    font-weight: 800;
 }
 
 QTabBar::tab:hover {
     background: #d1d5db;
+    font-size: 15px;
 }
 
-/* === TOOLTIP === */
+/* === TOOLTIP (УВЕЛИЧЕН) === */
 QToolTip {
     background: #1f2937;
     color: #ffffff;
-    border: 1px solid #374151;
-    padding: 6px 10px;
-    font-size: 12px;
+    border: 2px solid #374151;
+    padding: 10px 14px;
+    font-size: 14px;
+    border-radius: 4px;
 }
 
-/* === ПРОГРЕСС БАР === */
+/* === ПРОГРЕСС БАР (УВЕЛИЧЕН) === */
 QProgressBar {
-    border: 2px solid #d1d5db;
+    border: 3px solid #d1d5db;
     text-align: center;
-    font-weight: 600;
+    font-weight: 700;
     background: #ffffff;
     color: #1f2937;
+    font-size: 15px;
+    height: 28px;
+    border-radius: 6px;
 }
 
 QProgressBar::chunk {
     background: #2563eb;
+    border-radius: 4px;
 }
 
-/* === COMBOBOX === */
+/* === COMBOBOX (УВЕЛИЧЕН) === */
 QComboBox {
     background: #ffffff;
     color: #1f2937;
-    border: 1px solid #d1d5db;
-    padding: 8px 12px;
-    font-size: 13px;
-    min-width: 120px;
+    border: 2px solid #d1d5db;
+    padding: 12px 16px;
+    font-size: 16px;
+    min-width: 150px;
+    min-height: 48px;
+    border-radius: 4px;
 }
 
 QComboBox:focus {
-    border: 2px solid #2563eb;
+    border: 3px solid #2563eb;
     background: #ffffff;
+    font-size: 16px;
 }
 
 QComboBox::drop-down {
     border: none;
-    width: 24px;
+    width: 32px;
 }
 
 QComboBox QAbstractItemView {
     background: #ffffff;
     color: #1f2937;
-    border: 2px solid #d1d5db;
+    border: 3px solid #d1d5db;
     selection-background-color: #2563eb;
     selection-color: #ffffff;
+    font-size: 15px;
+    padding: 8px;
+}
+
+/* === ДОПОЛНИТЕЛЬНЫЕ УЛУЧШЕНИЯ ДЛЯ ЧИТАЕМОСТИ === */
+QCheckBox, QRadioButton {
+    font-size: 16px;
+    spacing: 10px;
+    padding: 8px;
+}
+
+QCheckBox::indicator, QRadioButton::indicator {
+    width: 22px;
+    height: 22px;
+}
+
+QListWidget, QTreeWidget, QTreeView {
+    font-size: 15px;
+    padding: 8px;
+}
+
+QListWidget::item, QTreeWidget::item {
+    padding: 12px;
+    min-height: 40px;
+}
+
+QToolButton {
+    font-size: 15px;
+    padding: 10px 18px;
+    min-height: 42px;
 }
