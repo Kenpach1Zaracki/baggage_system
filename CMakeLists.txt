@@ -4,18 +4,15 @@ project(BaggageSystem VERSION 1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Настройка Qt
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-# Поиск Qt6 (или Qt5 если Qt6 недоступен)
 find_package(Qt6 COMPONENTS Core Widgets Sql QUIET)
 if(NOT Qt6_FOUND)
     find_package(Qt5 5.15 REQUIRED COMPONENTS Core Widgets Sql)
 endif()
 
-# Включение директорий
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # Исходные файлы
