@@ -6,7 +6,6 @@
 #include <QDebug>
 
 BaggageManager::BaggageManager() {
-    // Загружаем данные из БД при инициализации
     m_records = DatabaseManager::instance().getAllRecords();
     qDebug() << "BaggageManager инициализирован. Записей в кеше:" << m_records.size();
 }
@@ -72,7 +71,6 @@ bool BaggageManager::addRecord(const BaggageRecord& record) {
 int BaggageManager::deleteRecordsByFlightNumbers(const QStringList& flightNumbers) {
     int deletedCount = DatabaseManager::instance().deleteRecordsByFlightNumbers(flightNumbers);
     if (deletedCount > 0) {
-        // Обновляем кеш
         m_records = DatabaseManager::instance().getAllRecords();
     }
     return deletedCount;
@@ -105,7 +103,6 @@ QVector<BaggageRecord> BaggageManager::findRecordsByPassengerName(const QString&
     return DatabaseManager::instance().findRecordsByPassengerName(passengerName);
 }
 
-// Устаревшие методы для совместимости (больше не используются)
 bool BaggageManager::saveBinaryFile(const QString& filename) {
     Q_UNUSED(filename);
     // Данные сохраняются в PostgreSQL автоматически
@@ -114,6 +111,5 @@ bool BaggageManager::saveBinaryFile(const QString& filename) {
 
 bool BaggageManager::loadBinaryFile(const QString& filename) {
     Q_UNUSED(filename);
-    // Данные загружаются из PostgreSQL
     return loadFromFile(filename);
 }
