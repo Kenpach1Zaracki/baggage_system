@@ -10,7 +10,7 @@
  */
 class BaggageRecord {
 public:
-    static constexpr int MAX_ITEMS = 5; // Максимальное количество вещей
+    static constexpr int MAX_ITEMS = 5; 
 
     BaggageRecord();
     BaggageRecord(const QString& flightNumber, const QString& passengerName,
@@ -40,9 +40,9 @@ public:
     friend QDataStream& operator>>(QDataStream& in, BaggageRecord& record);
 
 private:
-    QString m_flightNumber;      // Номер рейса
-    QString m_passengerName;     // ФИО пассажира
-    QVector<double> m_itemWeights; // Вес каждой вещи (до 5 штук)
+    QString m_flightNumber;     
+    QString m_passengerName;   
+    QVector<double> m_itemWeights; 
 };
 
 #endif // BAGGAGERECORD_H
