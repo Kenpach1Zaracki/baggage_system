@@ -1,7 +1,3 @@
--- ============================================
--- Инициализация базы данных для системы багажа
--- ============================================
-
 -- Создание таблицы для записей о багаже
 CREATE TABLE IF NOT EXISTS baggage_records (
     id SERIAL PRIMARY KEY,
@@ -9,10 +5,10 @@ CREATE TABLE IF NOT EXISTS baggage_records (
     passenger_name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_by INTEGER -- ID пользователя, создавшего запись
+    created_by INTEGER 
 );
 
--- Создание таблицы для отдельных вещей (НОРМАЛИЗАЦИЯ)
+-- Создание таблицы для отдельных вещей 
 CREATE TABLE IF NOT EXISTS baggage_items (
     id SERIAL PRIMARY KEY,
     baggage_record_id INTEGER NOT NULL REFERENCES baggage_records(id) ON DELETE CASCADE,
@@ -56,7 +52,6 @@ CREATE TRIGGER update_baggage_records_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
--- Создание таблицы пользователей (ТЗ п. 1.2.8.4.2, п. 1.2.4.5.6)
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(100) UNIQUE NOT NULL,
@@ -83,7 +78,6 @@ VALUES ('admin', '286057e1642b4a482258fa71c57d7c700ba55fa8b6b15f5593648c800a1dad
 ON CONFLICT (username) DO NOTHING;
 
 -- Тестовые данные для демонстрации
--- Сначала вставляем записи багажа
 INSERT INTO baggage_records (id, flight_number, passenger_name) VALUES
     (1, 'SU1234', 'Иванов Иван Иванович'),
     (2, 'AF567', 'Петров Петр Петрович'),
@@ -112,10 +106,8 @@ INSERT INTO baggage_items (baggage_record_id, item_number, weight) VALUES
     (5, 4, 12.50)
 ON CONFLICT (baggage_record_id, item_number) DO NOTHING;
 
--- Обновляем счетчик последовательности
 SELECT setval('baggage_records_id_seq', (SELECT MAX(id) FROM baggage_records));
 
--- Вывод информации
 DO $$
 BEGIN
     RAISE NOTICE '========================================';
