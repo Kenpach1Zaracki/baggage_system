@@ -9,10 +9,6 @@
 #include <QDateTime>
 #include "BaggageRecord.h"
 
-/**
- * @brief Диалог для создания отчётов за период времени
- * ТЗ п. 1.2.4.1.1 - формирование отчётов за указанный период
- */
 class DateRangeReportDialog : public QDialog {
     Q_OBJECT
 
