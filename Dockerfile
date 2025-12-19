@@ -1,6 +1,3 @@
-# ============================================
-# Stage 1: Builder
-# ============================================
 FROM ubuntu:22.04 AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -25,14 +22,10 @@ RUN mkdir build && cd build && \
     cmake .. && \
     cmake --build . --config Release
 
-# ============================================
-# Stage 2: Runtime (С ПОЛНОЙ ПОДДЕРЖКОЙ GUI)
-# ============================================
 FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# КРИТИЧНО: ВСЕ библиотеки для XCB и Qt GUI
 RUN apt-get update && apt-get install -y \
     libqt6core6 \
     libqt6gui6 \
