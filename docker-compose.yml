@@ -1,9 +1,6 @@
 services:
-  # ============================================
-  # PostgreSQL База данных
-  # ============================================
   postgres:
-    image: postgres:15.5-alpine  # Зафиксированная версия для стабильности
+    image: postgres:15.5-alpine 
     container_name: baggage_postgres
     restart: unless-stopped
     environment:
@@ -14,11 +11,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
-    # БЕЗОПАСНОСТЬ: Порт НЕ публикуется наружу, доступ только через Docker network
-    # Приложение подключается через имя сервиса "postgres"
-    # Если нужен внешний доступ для разработки, раскомментируйте:
-    # ports:
-    #   - "127.0.0.1:5432:5432"  # Только localhost
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -36,39 +28,31 @@ services:
           cpus: '0.25'
           memory: 128M
 
-  # ============================================
-  # Qt Приложение для управления багажом
-  # ============================================
   baggage_app:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: baggage_system
-    restart: "no"  # Не рестартить после крэша для отладки
+    restart: "no" 
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      # Параметры подключения к БД
       DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT}
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
-      # Параметры Qt для X11 forwarding
       DISPLAY: ${DISPLAY:-:0}
       QT_X11_NO_MITSHM: 1
       QT_QPA_PLATFORM: xcb
       XDG_RUNTIME_DIR: /tmp/runtime-appuser
     volumes:
-      # X11 socket для отображения GUI (rw требуется для Qt GUI)
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
-      # Xauthority для авторизации X11
       - ${XAUTHORITY:-$HOME/.Xauthority}:/home/appuser/.Xauthority:ro
     networks:
       - baggage_network
     privileged: false
-    # Ограничения ресурсов
     deploy:
       resources:
         limits:
@@ -78,9 +62,6 @@ services:
           cpus: '0.1'
           memory: 64M
 
-# ============================================
-# Volumes для персистентности данных
-# ============================================
 volumes:
   postgres_data:
     driver: local
