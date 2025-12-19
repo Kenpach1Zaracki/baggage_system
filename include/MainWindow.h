@@ -21,14 +21,11 @@ public:
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
 
-    // Установка гостевого режима (ТЗ п. 1.2.8.4.2)
     void setGuestMode(bool isGuest);
 
-    // Установка роли пользователя (RBAC - Role-Based Access Control)
     void setUserRole(const QString& role);
 
 private slots:
-    // Меню "Файл"
     void onNewFile();
     void onOpenFile();
     void onSaveFile();
@@ -46,7 +43,6 @@ private slots:
     void onChangeItemCount();      // Функция 8
     void onGenerateDateReport();
 
-    // Вспомогательные слоты
     void onAbout();
 
 private:
@@ -55,7 +51,7 @@ private:
     void createCentralWidget();
     void updateTable();
     void updateStatusBar();
-    void setupPermissions();  // Настройка прав доступа на основе роли
+    void setupPermissions();  
 
     // GUI компоненты
     QTableWidget* m_tableWidget;
@@ -76,10 +72,9 @@ private:
     std::unique_ptr<BaggageManager> m_manager;
     QString m_currentFilename;
 
-    // Гостевой режим и роли
     bool m_isGuestMode;
-    QString m_userRole;  // Роль пользователя (admin/user/guest)
-    QString m_username;  // Имя текущего пользователя
+    QString m_userRole;  
+    QString m_username;  
 };
 
 #endif // MAINWINDOW_H
