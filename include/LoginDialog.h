@@ -7,10 +7,6 @@
 #include <QLabel>
 #include <QString>
 
-/**
- * @brief Диалог авторизации пользователя
- * ТЗ п. 1.2.8.4.2, п. 1.2.4.5.6 - система контроля доступа
- */
 class LoginDialog : public QDialog {
     Q_OBJECT
 
@@ -47,7 +43,7 @@ private:
     // Состояние
     LoginResult m_loginResult;
     QString m_username;
-    QString m_userRole;  // Роль пользователя (admin/user/guest)
+    QString m_userRole; 
     int m_failedAttempts;
     static constexpr int MAX_LOGIN_ATTEMPTS = 3;
 
